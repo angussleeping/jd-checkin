@@ -49,5 +49,3 @@ ql repo https://gh-proxy.com/https://github.com/angussleeping/jdfaker4.git "jd_|
 * [@Andy Woo](https://t.me/update_help_group)「青龙互助研究院支持」
 * [@Oreo](https://github.com/Oreomeow) 「青龙Faker仓库一键安装配置」
 * [@shufflewzc](https://github.com/shufflewzc)「faker2和faker4原库」
-
-# 欢迎Pull Request！
