@@ -1,33 +1,17 @@
 ## 仓库说明
-### 锄禾日当午，汗滴禾下土
+### 青龙面板和呆呆面板都可以使用
 
-Faker自用仓库。本地秘钥计算方法，保证账户信息安全。已适配Spy插件24小时全天监控。
+Faker自用仓库。本地秘钥计算方法，保证账户信息安全。已适配Spy插件24小时全天监控。（copy）
 
-* 推荐配合无界使用
-* 自有拉库代理
-* 每日保持更新
-
-### 注意
-为了可以完美使用本库，请使用一键安装脚本安装青龙，请按照教程链接进行配置。
-
-【一键脚本】
-https://thin-hill-428.notion.site/Faker-QL-pannel-Faker-Repository-environment-Setup-45edcbfe90d74d8abb2d71896eab3be7
-
-##  日常签到版
-
-日常签到，仅包含少量日常任务签到版本。安静挂机。
-
-#### [点击直达频道获得更多使用教程](https://t.me/scriptalking)
-
-[![Anurag's GitHub stats](https://github-readme-stats.vercel.app/api?username=shufflewzc&bg_color=30,e96443,904e95&title_color=fff&text_color=fff)](https://github.com/anuraghazra/github-readme-stats)
-
+* shufflewzc/faker2和faker4中挑选适合静默运行的任务
+* 所有任务均是fork过来的
 
 
 【注意】拉库前请打开青龙面板-配置文件 GithubProxyUrl="" 双引号中的内容去掉。
 
 Faker4
 
-ql repo https://git.metauniverse-cn.com/https://github.com/shufflewzc/faker4.git "jd_|jx_|gua_|jddj_|jdCookie" "activity|backUp" "^jd[^_]|USER|function|utils|sendNotify|ZooFaker_Necklace.js|JDJRValidator_|sign_graphics_validate|ql|JDSignValidator|magic|depend|h5sts" "main"
+ql repo https://gh-proxy.com/https://github.com/angussleeping/jdfaker4.git "jd_|jx_|gua_|jddj_|jdCookie" "activity|backUp" "^jd[^_]|USER|function|utils|sendNotify|ZooFaker_Necklace.js|JDJRValidator_|sign_graphics_validate|ql|JDSignValidator|magic|depend|h5sts" "main"
 
 【教程合集】
 [https://www.notion.so/Cent-OS-7-6-1c598629675145988b43a37998a1604a]()
@@ -64,5 +48,6 @@ ql repo https://git.metauniverse-cn.com/https://github.com/shufflewzc/faker4.git
 * [@nzw9314](https://github.com/nzw9314)
 * [@Andy Woo](https://t.me/update_help_group)「青龙互助研究院支持」
 * [@Oreo](https://github.com/Oreomeow) 「青龙Faker仓库一键安装配置」
+* [@shufflewzc](https://github.com/shufflewzc)「faker2和faker4原库」
 
 # 欢迎Pull Request！
