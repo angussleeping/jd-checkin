@@ -17,20 +17,13 @@ if (process.env.JD_COOKIE) {
     CookieJDs = [process.env.JD_COOKIE];
   }
 }
-if (JSON.stringify(process.env).indexOf('GITHUB') > -1) {
+if (process.env.GITHUB_ACTIONS === 'true') {
   console.log(`请勿使用github action运行此脚本,无论你是从你自己的私库还是其他哪里拉取的源代码，都会导致我被封号\n`);
   !(async () => {
     await require('./sendNotify').sendNotify('提醒', `请勿使用github action、滥用github资源会封我仓库以及账号`)
     await process.exit(0);
   })()
 }
-//!(async () => {
-//	IP = await getIP();
-//    try {
-//        IP = IP.match(/((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})(\.((2(5[0-5]|[0-4]\d))|[0-1]?\d{1,2})){3}/)[0];
-//        console.log(`\n当前公网IP: ${IP}`);
-//    } catch (e) { }
-//})()
 CookieJDs = [...new Set(CookieJDs.filter(item => !!item))]
 if (process.env.JD_DEBUG && process.env.JD_DEBUG === 'false') console.log = () => { };
 console.log(`\n====================共${CookieJDs.length}个京东账号Cookie=================\n`);
@@ -58,31 +51,6 @@ if (process.env.DP_POOL) {
 
   }
 }
-function getIP() {
-  const https = require('https');
-  return new Promise((resolve, reject) => {
-    let opt = {
-      hostname: "www.cip.cc",
-      port: 443,
-      path: "/",
-      method: "GET",
-      headers: {
-        "User-Agent": 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/95.0.4638.69 Safari/537.36',
-      },
-      timeout: 5000
-    }
-    const req = https.request(opt, (res) => {
-      res.setEncoding('utf-8');
-      let tmp = '';
-      res.on('error', reject);
-      res.on('data', d => tmp += d);
-      res.on('end', () => resolve(tmp));
-    });
-
-    req.on('error', reject);
-    req.end();
-  });
-}
 // 以下为注入互助码环境变量（仅nodejs内起效）的代码
 function SetShareCodesEnv(nameChinese = "", nameConfig = "", envName = "") {
   let rawCodeConfig = {}
@@ -90,14 +58,8 @@ function SetShareCodesEnv(nameChinese = "", nameConfig = "", envName = "") {
   // 读取互助码
   let shareCodeLogPath = fs.existsSync(`${process.env.QL_DIR}/data`) ? `${process.env.QL_DIR}/data/log/.ShareCode/${nameConfig}.log` : `${process.env.QL_DIR}/log/.ShareCode/${nameConfig}.log`;
   if (fs.existsSync(shareCodeLogPath)) {
-    // 因为faker2目前没有自带ini，改用已有的dotenv来解析
-    // // 利用ini模块读取原始互助码和互助组信息
-    // let ini = require('ini')
-    // rawCodeConfig = ini.parse(fs.readFileSync(shareCodeLogPath, 'utf-8'))
-
-    // 使用env模块
-    require('dotenv').config({ path: shareCodeLogPath })
-    rawCodeConfig = process.env
+    // 用 dotenv.parse 只解析文件内容，不污染 process.env
+    rawCodeConfig = require('dotenv').parse(fs.readFileSync(shareCodeLogPath, 'utf-8'))
   }
 
   // 解析每个用户的互助码

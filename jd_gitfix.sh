@@ -13,11 +13,11 @@ echo "查看缓存配置 配置为:524288000 则成功\n"
 POST_BUFFER_VALUE=$(git config --global http.postBuffer)
 echo "http.postBuffer 的值是: $POST_BUFFER_VALUE"
 
-# 设置 http.sslVerify
-echo "设置 github拉库SSL检验配置....\n"
-git config --global http.sslVerify "false"
+# 设置 http.sslVerify（仅对 gh-proxy 代理域名生效，不影响全局 SSL 校验）
+echo "设置 github拉库SSL检验配置(仅 gh-proxy.com)....\n"
+git config --global http."https://gh-proxy.com/".sslVerify "false"
 
 # 查看 http.sslVerify 配置
 echo "查看 github拉库SSL检验配置 配置为false则成功\n"
-SSL_VERIFY_VALUE=$(git config --global http.sslVerify)
-echo "http.sslVerify 的值是: $SSL_VERIFY_VALUE"
+SSL_VERIFY_VALUE=$(git config --global http."https://gh-proxy.com/".sslVerify)
+echo "http.sslVerify(gh-proxy.com) 的值是: $SSL_VERIFY_VALUE"

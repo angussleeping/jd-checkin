@@ -77,40 +77,49 @@ declare -A target_deps=(
     ["https-proxy-agent"]="7.0.5"
     ["sharp"]="0.32.0"
     ["qs"]="6.11.0"
+    ["big-integer"]="1.6.52"
 )
 
 # 获取已安装的全局依赖
 installed_deps=$(pnpm list -g --depth=0 --parseable 2>/dev/null | awk -F@ '{print $1, $2}')
 
-# 安装或更新依赖
+# 先收集需要安装/更新的依赖，再一次性批量安装（比逐个装快得多）
+to_install=()
 for dep in "${!target_deps[@]}"; do
     target_version="${target_deps[$dep]}"
     installed_version=$(echo "$installed_deps" | awk -v dep="$dep" '$1 == dep {print $2}')
 
     if [[ -z "$installed_version" ]]; then
-        echo "正在安装 $dep@$target_version ..."
-        pnpm i -g "$dep@$target_version" || { echo "安装 $dep@$target_version 失败！"; exit 1; }
+        echo "待安装 $dep@$target_version"
+        to_install+=("$dep@$target_version")
     elif [[ "$installed_version" != "$target_version" ]]; then
-        echo "正在更新 $dep ($installed_version -> $target_version) ..."
-        pnpm i -g "$dep@$target_version" || { echo "更新 $dep@$target_version 失败！"; exit 1; }
+        echo "待更新 $dep ($installed_version -> $target_version)"
+        to_install+=("$dep@$target_version")
     else
         echo "$dep@$installed_version 已是最新版本，跳过安装。"
     fi
 done
 
+if [[ ${#to_install[@]} -gt 0 ]]; then
+    echo -e "\n开始批量安装/更新依赖...\n"
+    pnpm i -g "${to_install[@]}" || { echo "批量安装失败！"; exit 1; }
+else
+    echo -e "\n所有依赖均已是最新，无需安装。\n"
+fi
+
 # 安装 Python 依赖
 pip3 install -i https://pypi.doubanio.com/simple/ --upgrade jieba requests
 
-# 清理 canvas 冲突文件
+# 清理 canvas 冲突文件（glob 需先展开再逐个判断）
+shopt -s nullglob
 canvas_paths=(
-    "/usr/local/pnpm-global/5/node_modules/.pnpm/canvas*"
-    "/root/.local/share/pnpm/global/5/.pnpm/canvas*"
+    /usr/local/pnpm-global/5/node_modules/.pnpm/canvas*
+    /root/.local/share/pnpm/global/5/.pnpm/canvas*
 )
 
-for path in "${canvas_paths[@]}"; do
-    if [ -d "$path" ]; then
-        rm -rf "$path"
-    fi
+for path in ${canvas_paths[@]+"${canvas_paths[@]}"}; do
+    rm -rf "$path"
 done
+shopt -u nullglob
 
 echo -e "\n依赖检查与安装完成！请检查是否有报错。\n"

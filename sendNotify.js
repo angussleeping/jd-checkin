@@ -147,27 +147,21 @@ if (isnewql) {
 }
 
 
-let Fileexists = fs.existsSync(strCKFile);
-let TempCK = [];
-if (Fileexists) {
-    console.log("检测到别名缓存文件CKName_cache.json，载入...");
-    TempCK = fs.readFileSync(strCKFile, 'utf-8');
-    if (TempCK) {
-        TempCK = TempCK.toString();
-        TempCK = JSON.parse(TempCK);
+// 安全加载缓存文件：文件损坏时容错，避免拖垮所有脚本的通知功能
+function safeLoadJson(filePath, desc) {
+    try {
+        if (!fs.existsSync(filePath)) return [];
+        console.log(`检测到${desc}，载入...`);
+        const content = fs.readFileSync(filePath, 'utf-8');
+        return content ? JSON.parse(content) : [];
+    } catch (e) {
+        console.log(`${desc}加载失败(${filePath})：${e.message}，已忽略`);
+        return [];
     }
 }
 
-let UidFileexists = fs.existsSync(strUidFile);
-let TempCKUid = [];
-if (UidFileexists) {
-    console.log("检测到一对一Uid文件WxPusherUid.json，载入...");
-    TempCKUid = fs.readFileSync(strUidFile, 'utf-8');
-    if (TempCKUid) {
-        TempCKUid = TempCKUid.toString();
-        TempCKUid = JSON.parse(TempCKUid);
-    }
-}
+let TempCK = safeLoadJson(strCKFile, "别名缓存文件CKName_cache.json");
+let TempCKUid = safeLoadJson(strUidFile, "一对一Uid文件WxPusherUid.json");
 
 let tempAddCK = {};
 let boolneedUpdate = false;
@@ -274,9 +268,12 @@ async function sendNotify(text, desp, params = {}, author = '\n\n本通知 By cc
             if (Notify_CKTask) {
                 console.log("触发CK脚本，开始执行....");
                 Notify_CKTask = "task " + Notify_CKTask + " now";
-                await exec(Notify_CKTask, function (error, stdout, stderr) {
-                    console.log(error, stdout, stderr)
-                });
+                try {
+                    const { stdout, stderr } = await require('util').promisify(exec)(Notify_CKTask);
+                    console.log(stdout, stderr);
+                } catch (e) {
+                    console.log("CK脚本执行出错:", e.message);
+                }
             }
         }
         if (process.env.NOTIFY_AUTOCHECKCK == "true") {
