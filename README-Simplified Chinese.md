@@ -10,15 +10,16 @@ Faker自用仓库。本地秘钥计算方法，保证账户信息安全。已适
 【注意】拉库前请打开青龙面板-配置文件 GithubProxyUrl="" 双引号中的内容去掉。
 
 
-```ql repo https://gh-proxy.com/https://github.com/angussleeping/jd-checkin.git "jd_|jx_|gua_|jddj_|jdCookie" "activity|backUp" "^jd[^_]|USER|function|utils|sendNotify|ZooFaker_Necklace.js|JDJRValidator_|sign_graphics_validate|ql|JDSignValidator|magic|depend|h5sts" "main"```
+```text
+ql repo https://gh-proxy.com/https://github.com/angussleeping/jd-checkin.git "jd_|jx_|gua_|jddj_|jdCookie" "activity|backUp" "^jd[^_]|USER|function|utils|sendNotify|ZooFaker_Necklace.js|JDJRValidator_|sign_graphics_validate|ql|JDSignValidator|magic|depend|h5sts" "main"
 
 
-## 仓库名：https://gh-proxy.com/https://github.com/angussleeping/jd-checkin.git
-## 白名单：jd_|jx_|gua_|jddj_|jdCookie
-## 黑名单：activity|backUp
-## 依赖规则：^jd[^_]|USER|function|utils|sendNotify|ZooFaker_Necklace.js|JDJRValidator_|sign_graphics_validate|ql|JDSignValidator|magic|depend|h5sts
-## 分支：main
-## 青龙面板和呆呆面板都可以使用上述拉库代码
+## **仓库名：**https://gh-proxy.com/https://github.com/angussleeping/jd-checkin.git
+## **白名单：**jd_|jx_|gua_|jddj_|jdCookie
+## **黑名单：**activity|backUp
+## **依赖规则：**^jd[^_]|USER|function|utils|sendNotify|ZooFaker_Necklace.js|JDJRValidator_|sign_graphics_validate|ql|JDSignValidator|magic|depend|h5sts
+## **分支：**main
+## **青龙面板和呆呆面板都可以使用上述拉库代码**
 
 【教程合集】
 [https://www.notion.so/Cent-OS-7-6-1c598629675145988b43a37998a1604a]()
