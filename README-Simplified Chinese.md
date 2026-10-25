@@ -14,7 +14,7 @@ Faker自用仓库。本地秘钥计算方法，保证账户信息安全。已适
 ql repo https://gh-proxy.com/https://github.com/angussleeping/jd-checkin.git "jd_|jx_|gua_|jddj_|jdCookie" "activity|backUp" "^jd[^_]|USER|function|utils|sendNotify|ZooFaker_Necklace.js|JDJRValidator_|sign_graphics_validate|ql|JDSignValidator|magic|depend|h5sts" "main"
 
 
-**## 仓库名：** https://gh-proxy.com/https://github.com/angussleeping/jd-checkin.git
+**仓库名：**https://gh-proxy.com/https://github.com/angussleeping/jd-checkin.git
 ## **白名单：** jd_|jx_|gua_|jddj_|jdCookie
 ## **黑名单：** activity|backUp
 ## **依赖规则：** ^jd[^_]|USER|function|utils|sendNotify|ZooFaker_Necklace.js|JDJRValidator_|sign_graphics_validate|ql|JDSignValidator|magic|depend|h5sts
