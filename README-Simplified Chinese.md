@@ -27,8 +27,6 @@ ql repo https://gh-proxy.com/https://github.com/angussleeping/jd-checkin.git "jd
 
 **青龙面板和呆呆面板都可以使用上述拉库代码**
 
-【教程合集】
-[https://www.notion.so/Cent-OS-7-6-1c598629675145988b43a37998a1604a]()
 
 
 ## 特别声明：
