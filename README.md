@@ -1,6 +1,28 @@
 # 仓库说明
 ## 青龙面板和呆呆面板都可以使用
 
+> **2026-10-25 更新**（本次优化由 Trae CN AI 辅助完成）：
+>
+> **Bug 修复**
+> - 删除加载即崩溃且无引用的 `function/common.js`
+> - 修复 `sendNotify.js` 的 `await exec()` 假等待问题（CK 检测任务现在会真正执行完成）
+> - 修复 `sendNotify.js` 缓存文件损坏导致所有脚本通知崩溃的问题
+> - 修复 `ql.js` 中被 got 静默忽略的请求参数、token 解析不可靠问题
+> - 补充 `jd_indeps.sh` 缺失的 `big-integer` 依赖（影响 jd_bean_change / jd_hssign / jd_qy_sign / jd_ttgd）
+>
+> **安全加固**
+> - `jd_gitfix.sh` 的 SSL 关闭改为仅对 gh-proxy.com 生效，不再全局关闭
+> - `jdCookie.js` 的 GitHub Actions 检测改为精确判断，互助码解析不再污染环境变量
+>
+> **性能与结构优化**
+> - `ql.js` 重写：token 缓存、5600/5700 双端口自动回退
+> - `jd_indeps.sh` 依赖安装改为批量安装，速度更快
+> - `function/` 下 sendNotify / ql / jdcookie 统一转发根目录版本，消除双份维护
+> - 清理 27 个无引用库文件，仓库瘦身约 2MB（可从 git 历史 `5f96674` 恢复）
+> - `USER_AGENTS.js` UA 池升级至京东 App 12.x~13.x / Android 12~14 / iOS 15~17
+>
+> 详细变更记录见 [CHANGELOG.md](CHANGELOG.md)
+
 Faker自用仓库。本地秘钥计算方法，保证账户信息安全。已适配Spy插件24小时全天监控。（copy）
 
 * shufflewzc/faker2和faker4中挑选适合静默运行的任务
