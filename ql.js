@@ -1,15 +1,11 @@
 'use strict'
 
 const got = require('got')
-require('dotenv').config()
 const { readFile } = require('fs/promises')
-const path = require('path')
 
-const qlDir = '/ql'
 const fs = require('fs')
 const tokenFileList = ['/ql/data/db/keyv.sqlite', '/ql/data/config/auth.json', '/ql/config/auth.json']
 
-//const authFile = path.join(qlDir, 'config/auth.json');
 let authFile = getLatestFile(tokenFileList)
 let cachedToken = null
 // 主端口 5600，失败时自动回退 5700
@@ -73,6 +69,9 @@ async function getEnvs() {
             authorization: `Bearer ${token}`,
         },
     }).json()
+    if (!body || body.code !== 200 || !Array.isArray(body.data)) {
+        throw new Error(`获取青龙环境变量失败：${body && body.message ? body.message : '接口返回异常'}`)
+    }
     return body.data
 }
 

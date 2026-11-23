@@ -163,6 +163,19 @@ function safeLoadJson(filePath, desc) {
 let TempCK = safeLoadJson(strCKFile, "别名缓存文件CKName_cache.json");
 let TempCKUid = safeLoadJson(strUidFile, "一对一Uid文件WxPusherUid.json");
 
+// 转义正则元字符：账号别名里可能出现 ( ) [ ] * + 等字符，直接拼进 RegExp 会抛错
+function escapeRegExp(str) {
+    return String(str).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+// 用函数作为替换值，避免别名中的 $& $1 等被当成替换占位符
+function replaceByNames(content, names, replacement) {
+    if (!content) return content;
+    // 长名称优先，避免 pin 是别名前缀时只替换掉一部分
+    const pattern = names.filter(Boolean).sort((a, b) => b.length - a.length).map(escapeRegExp).join('|');
+    if (!pattern) return content;
+    return content.replace(new RegExp(pattern, 'gm'), () => replacement);
+}
+
 let tempAddCK = {};
 let boolneedUpdate = false;
 let strCustom = "";
@@ -745,7 +758,7 @@ async function sendNotify(text, desp, params = {}, author = '\n\n本通知 By cc
                         try {
                             //额外处理1，nickName包含星号
                             $.nickName = $.nickName.replace(new RegExp(`[*]`, 'gm'), "[*]");
-                            text = text.replace(new RegExp(`${$.UserName}|${$.nickName}`, 'gm'), $.Remark);
+                            text = replaceByNames(text, [$.UserName, $.nickName], $.Remark);
                             if (text == "京东资产变动" || text == "京东资产变动#2" || text == "京东资产变动#3" || text == "京东资产变动#4") {
                                 var Tempinfo = "";
                                 if (envs[i].created)
@@ -760,16 +773,16 @@ async function sendNotify(text, desp, params = {}, author = '\n\n本通知 By cc
                                 }
                             }
 
-                            desp = desp.replace(new RegExp(`${$.UserName}|${$.nickName}`, 'gm'), $.Remark);
-                            strsummary = strsummary.replace(new RegExp(`${$.UserName}|${$.nickName}`, 'gm'), $.Remark);
+                            desp = replaceByNames(desp, [$.UserName, $.nickName], $.Remark);
+                            strsummary = replaceByNames(strsummary, [$.UserName, $.nickName], $.Remark);
                             //额外处理2，nickName不包含星号，但是确实是手机号
                             var tempname = $.UserName;
                             if (tempname.length == 13 && tempname.substring(8)) {
                                 tempname = tempname.substring(0, 3) + "[*][*][*][*][*]" + tempname.substring(8);
                                 //console.log("额外处理2:"+tempname);
-                                text = text.replace(new RegExp(tempname, 'gm'), $.Remark);
-                                desp = desp.replace(new RegExp(tempname, 'gm'), $.Remark);
-                                strsummary = strsummary.replace(new RegExp(tempname, 'gm'), $.Remark);
+                                text = replaceByNames(text, [tempname], $.Remark);
+                                desp = replaceByNames(desp, [tempname], $.Remark);
+                                strsummary = replaceByNames(strsummary, [tempname], $.Remark);
                             }
 
                         } catch (err) {
@@ -796,15 +809,14 @@ async function sendNotify(text, desp, params = {}, author = '\n\n本通知 By cc
     }
 
     if (boolneedUpdate) {
-        var str = JSON.stringify(TempCK, null, 2);
-        fs.writeFile(strCKFile, str, function (err) {
-            if (err) {
-                console.log(err);
-                console.log("更新CKName_cache.json失败!");
-            } else {
-                console.log("缓存文件CKName_cache.json更新成功!");
-            }
-        })
+        // 同步写入：脚本可能在写文件前就结束，异步 writeFile 会丢缓存
+        try {
+            fs.writeFileSync(strCKFile, JSON.stringify(TempCK, null, 2));
+            console.log("缓存文件CKName_cache.json更新成功!");
+        } catch (err) {
+            console.log(err);
+            console.log("更新CKName_cache.json失败!");
+        }
     }
 
     //提供6种通知

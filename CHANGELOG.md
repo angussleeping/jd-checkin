@@ -1,3 +1,56 @@
+# 变更摘要（2026-11-23 第二轮审计优化）
+
+本轮只改动基础设施层（Cookie 加载 / 青龙 API / 通知 / 依赖脚本），未触碰任务脚本的混淆逻辑。
+
+## 一、修复的 Bug（6 个）
+
+| # | 文件 | 问题 | 修复方式 |
+|---|------|------|---------|
+| 1 | sendNotify.js:748 | 账号别名含 `(` `[` `*` 等正则元字符时，`new RegExp()` 抛错，别名替换整体失败（异常被 try/catch 吞掉，通知里仍显示 pin） | 新增 `escapeRegExp()` / `replaceByNames()`，替换值改用函数，避免 `$&`/`$1` 被当作占位符 |
+| 2 | sendNotify.js:800 | 别名缓存用异步 `fs.writeFile`，脚本可能在写盘前退出，导致缓存丢失、每次重复请求京东接口 | 改为 `fs.writeFileSync` 并捕获异常 |
+| 3 | jdCookie.js:33 | Cookie 格式不规范时把完整 `pt_key` 打印到日志，存在 CK 泄漏风险 | 新增 `maskCK()`，日志中显示为 `pt_key=***` |
+| 4 | ql.js:4 | 无条件 `require('dotenv').config()`，但代码从未使用；缺少该依赖的面板（部分呆呆面板）会让所有通知崩溃 | 删除无用依赖 |
+| 5 | ql.js:72 | 青龙接口返回非 200 或 data 非数组时，下游 `data.length` 抛 `TypeError`，难以定位 | 校验 `code === 200` 且 `data` 为数组，抛出可读错误 |
+| 6 | jd_indeps.sh:84 | `pnpm list -g --parseable` 输出的是路径而非 `包名@版本`，`awk -F@` 解析失败 → 认为所有依赖未安装，每次全量重装 | 改用 `pnpm list -g --json` + node 解析 |
+
+## 二、依赖与兼容性
+
+- **新增 `got@11.8.6`**：`got` 被几乎所有脚本引用但原依赖清单缺失；且必须锁 11.x（12+ 为纯 ESM，`require('got')` 会失败）
+- **新增 `dotenv@16.4.5`**：`jdCookie.js` 互助码解析需要
+- **`sharp` 0.32.0 → 0.33.5**：0.32 对 Node 20+ 兼容性差，新版青龙默认 Node 20/22
+- **`tunnel` 由 `latest` 改为 `0.0.6`**：避免每次运行都重装
+- **pip 镜像由豆瓣源改为清华源**：豆瓣 pypi 已停止服务；同时 pip 失败不再中断整个脚本
+
+## 三、脚本健壮性
+
+- **jd_indeps.sh**
+  - 修复 `AUTOCFG` 逻辑：原来硬编码 `shufflewzc_faker4` 仓库名，本仓库使用时必然找不到文件；现在按当前目录/自动查找定位 `sendNotify.js`
+  - 修复 `set -u` 下 `dir_data` 未定义导致脚本直接退出
+  - 增加 `pnpm` 存在性检查与清晰提示
+  - 定时注释由每年一次（`0 8 5 5 *`）调整为每周一次（`0 4 * * 1`）
+- **jd_gitfix.sh**：`echo "...\n"` 改为 `printf`，修复输出不换行
+
+## 四、仓库规范
+
+- 新增 `.gitattributes`：强制 `*.sh` 以 LF 存储，避免 Windows 提交 CRLF 后青龙报 `syntax error near unexpected token 'do\r'`
+- 新增 `.gitignore`：忽略 `node_modules/`、`.env`、`*.log`
+- 删除无任何引用的 `function/accounts_proxy.json`（没有代码读取该文件，容易让人误以为支持按账号配置代理）
+- README 重写：补齐任务清单、依赖说明、环境变量、通知配置、呆呆面板用法、FAQ 与安全说明
+
+## 五、验证情况
+
+- 所有改动的 JS 通过 `node --check`
+- `jd_indeps.sh`、`jd_gitfix.sh` 去除 CRLF 后通过 `bash -n`
+- `jdCookie.js` 冒烟测试：正常 CK 导出 `CookieJD` 成功；非法 CK 日志输出 `pt_key=***`
+- 依赖静态扫描覆盖 12 个任务脚本，未发现新增缺失的本地文件
+
+## 遗留事项
+
+- 任务脚本为上游混淆代码，内含若干不会执行的“诱饵” `require`（如 `@redacted/enterprise-plugin`），无法安全清理
+- `USER_AGENTS.js` 为 2024 年指纹，如需可随上游更新 UA 池
+
+---
+
 # 变更摘要（2026-10-25 优化）
 
 对应提交：`5f96674`（优化主体）、`484d54d`（清理备份目录）

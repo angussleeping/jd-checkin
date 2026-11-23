@@ -1,0 +1,2 @@
+# 保证 shell 脚本以 LF 存储，避免 Windows 下提交 CRLF 导致青龙/呆呆面板报 "syntax error near unexpected token `do\r'"
+*.sh text eol=lf

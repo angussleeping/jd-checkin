@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
-# 依赖安装脚本
-# 0 8 5 5 * jd_indeps.sh
+# 依赖安装脚本（建议每周执行一次，或在拉库/换机后手动执行一次）
+# 0 4 * * 1 jd_indeps.sh
 # new Env('依赖安装');
-# updatedate:20240903
+# updatedate:20261123
 
-set -euo pipefail  # 启用严格错误检查
+set -euo pipefail
 
 # 动态获取青龙根目录
 if [ -d "/ql/data" ]; then
@@ -15,31 +15,29 @@ fi
 
 dir_repo="$dir_root/repo"
 dir_deps="$dir_root/deps"
-dir_log="$dir_root/log"
 
-# 自动配置 sendNotify.js
+# 自动配置 sendNotify.js（AUTOCFG=true 时，从本仓库目录复制到 deps）
 if [[ "${AUTOCFG:-}" == 'true' ]]; then
-    if [[ -z "$(pwd | grep 'main')" ]]; then
-        dir_code="$dir_log/shufflewzc_faker4_jd_sharecode"
-        repo='shufflewzc_faker4'
+    if [[ -f "$dir_repo/$(basename "$(pwd)")/sendNotify.js" ]]; then
+        src_notify="$dir_repo/$(basename "$(pwd)")/sendNotify.js"
     else
-        dir_code="$dir_log/shufflewzc_faker4_main_jd_sharecode"
-        repo='shufflewzc_faker4_main'
+        src_notify=$(find "$dir_repo" -maxdepth 2 -name sendNotify.js 2>/dev/null | head -n 1)
     fi
-
-    [[ -d "$dir_root/data" ]] && dir_data="$dir_root/data"
-    [[ -d "$dir_data/repo" ]] && dir_repo="$dir_data/repo"
-    [[ -d "$dir_data/deps" ]] && dir_deps="$dir_data/deps"
-
-    if [ -f "$dir_repo/${repo}/sendNotify.js" ]; then
-        cp "$dir_repo/${repo}/sendNotify.js" "$dir_deps/"
-        echo -e "\n已配置 sendNotify.js 到 deps 目录\n"
+    if [[ -n "$src_notify" && -f "$src_notify" ]]; then
+        cp "$src_notify" "$dir_deps/"
+        echo -e "\n已配置 sendNotify.js 到 deps 目录（来源：$src_notify）\n"
     else
-        echo -e "\n错误：未找到 sendNotify.js 文件！\n"
+        echo -e "\n错误：未找到 sendNotify.js，请先拉库后再执行本脚本！\n"
         exit 1
     fi
 else
     echo -e "\n提示：如需自动配置 sendNotify.js，请设置变量 AUTOCFG='true'\n"
+fi
+
+# 检查 pnpm
+if ! command -v pnpm >/dev/null 2>&1; then
+    echo "未检测到 pnpm，请先在面板中安装 Node.js 环境（青龙自带 pnpm）"
+    exit 1
 fi
 
 # 检查权限
@@ -61,7 +59,7 @@ fi
 
 echo -e "\n开始检查依赖列表并安装依赖...\n"
 
-# 目标依赖列表
+# 目标依赖列表（got 固定 11.x：12+ 为纯 ESM，脚本里的 require('got') 会直接失败）
 declare -A target_deps=(
     ["tough-cookie"]="4.1.4"
     ["ds"]="2.0.2"
@@ -73,25 +71,42 @@ declare -A target_deps=(
     ["jsdom"]="24.1.1"
     ["moment"]="2.30.1"
     ["cheerio"]="1.0.0"
-    ["tunnel"]="latest"
+    ["tunnel"]="0.0.6"
     ["https-proxy-agent"]="7.0.5"
-    ["sharp"]="0.32.0"
+    ["sharp"]="0.33.5"
     ["qs"]="6.11.0"
     ["big-integer"]="1.6.52"
+    ["got"]="11.8.6"
+    ["dotenv"]="16.4.5"
 )
 
-# 获取已安装的全局依赖
-installed_deps=$(pnpm list -g --depth=0 --parseable 2>/dev/null | awk -F@ '{print $1, $2}')
+# 获取已安装的全局依赖（用 JSON 输出解析，避免 --parseable 把路径当包名的旧问题）
+installed_deps=$(pnpm list -g --depth=0 --json 2>/dev/null | node -e "
+let s = '';
+process.stdin.on('data', d => s += d).on('end', () => {
+    try {
+        const list = JSON.parse(s);
+        const rows = Array.isArray(list) ? list : [list];
+        for (const item of rows) {
+            for (const [name, info] of Object.entries(item.dependencies || {})) {
+                console.log(name + ' ' + (info.version || ''));
+            }
+        }
+    } catch (e) {}
+});
+" || true)
 
 # 先收集需要安装/更新的依赖，再一次性批量安装（比逐个装快得多）
 to_install=()
 for dep in "${!target_deps[@]}"; do
     target_version="${target_deps[$dep]}"
-    installed_version=$(echo "$installed_deps" | awk -v dep="$dep" '$1 == dep {print $2}')
+    installed_version=$(echo "$installed_deps" | awk -v dep="$dep" '$1 == dep {print $2; exit}')
 
     if [[ -z "$installed_version" ]]; then
         echo "待安装 $dep@$target_version"
         to_install+=("$dep@$target_version")
+    elif [[ "$target_version" == "latest" ]]; then
+        echo "$dep@$installed_version 已安装，跳过 latest。"
     elif [[ "$installed_version" != "$target_version" ]]; then
         echo "待更新 $dep ($installed_version -> $target_version)"
         to_install+=("$dep@$target_version")
@@ -107,8 +122,13 @@ else
     echo -e "\n所有依赖均已是最新，无需安装。\n"
 fi
 
-# 安装 Python 依赖
-pip3 install -i https://pypi.doubanio.com/simple/ --upgrade jieba requests
+# 安装 Python 依赖（失败不影响 Node 任务，不中断脚本）
+if command -v pip3 >/dev/null 2>&1; then
+    pip3 install -i https://pypi.tuna.tsinghua.edu.cn/simple --upgrade jieba requests \
+        || echo "Python 依赖安装失败，已跳过（不影响京东任务）"
+else
+    echo "未检测到 pip3，跳过 Python 依赖。"
+fi
 
 # 清理 canvas 冲突文件（glob 需先展开再逐个判断）
 shopt -s nullglob
