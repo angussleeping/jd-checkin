@@ -3,3 +3,21 @@ node_modules/
 *.log
 .DS_Store
 Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+
+# 工具运行时产生的敏感文件（Cookie / 登录态缓存 / 扫描报告）
+jd_auth_state.json
+jd_cookie.txt
+jd_activity_report.md
+jd_activity_report.json
+activity_report.md
+activity_report.json
+
+# 用户 home 下的登录态缓存（本地运行时产生）
+# 注意：这不是本仓库文件，但用户可能手动把缓存拷到仓库目录 —— 忽略它即可

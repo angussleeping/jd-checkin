@@ -1,8 +1,82 @@
+# 变更摘要（2026-11-23 第四轮：引入并优化 faker4 的 3 个 Python 工具脚本）
+
+本轮把上游 [shufflewzc/faker4](https://github.com/shufflewzc/faker4) 里的三个纯 Python 工具引入到仓库，并做了针对性优化。和混淆的 JS 任务脚本不同，这些是可读源码，可以安全修改。
+
+## 新增文件
+
+| 文件 | 用途 | 依赖 |
+|---|---|---|
+| `jd_cookie_helper.py` | 本机扫码获取 JD_COOKIE，浏览器登录态缓存免重复扫码 | `playwright` |
+| `jd_activity_scanner.py` | 扫描京东公开接口/活动页，生成存活报告（Markdown / JSON） | `requests` |
+| `jd_daily.py` | 每日签到 + 赚京豆（纯 HTTP，不依赖 h5st 签名，面板/本地均可） | `requests` |
+
+## 优化明细
+
+### `jd_cookie_helper.py`（相对 faker4）
+
+| 问题 | 修复 |
+|---|---|
+| 登录态缓存写 CWD，容易被 `git add .` 不小心提交 | 默认改 `~/.jd-cookie/state.json`（用户 home 目录） |
+| `--headless` + 无缓存 → 白等 3 分钟才失败 | 提前检测并立即报错，提示"先用有头模式跑一次" |
+| Ctrl+C 中断时浏览器进程残留（孤儿 chromium） | 加 KeyboardInterrupt 捕获，`with sync_playwright()` 自动退出 |
+| Playwright chromium 未安装 → 默认报错信息不清楚 | 检测 `launch` 异常里的 "not installed"，给出 install 命令 + 国内镜像加速选项 |
+| 终端输出完整 Cookie（`pt_key=...`），截图/日志泄漏风险 | 终端打印自动脱敏 `pt_key=***`；剪贴板和文件保留完整值 |
+| 登录态文件权限所有人可读 | 非 Windows 上 `os.chmod(state_file, 0o600)` |
+| Windows `clip` 命令需 UTF-16LE | 改用 `encode('utf-16le')`；Linux xclip 不存在时回退 wl-copy |
+
+### `jd_activity_scanner.py`（相对 faker4）
+
+| 问题 | 修复 |
+|---|---|
+| 模块级 `session_global`（全局变量） | 移入 `main()` 的闭包，与 ThreadPoolExecutor 同生命周期，`with requests.Session()` 自动关闭 |
+| 活动排序依赖 `id(act)`（CPython 内存地址，不可移植） | 改用 `(name, category)` tuple 作稳定 key |
+| 单个活动卡住 → 整体扫描无上限等待 | 每个活动探测 25s 硬超时 `fut.result(timeout=25)`，超时视为失败 |
+| `timeout=15` 不区分连接/读取 | 改为 `timeout=(5, 15)`（连接 5s + 读取 15s） |
+| 只有 Markdown 报告 | 新增 `--json` 输出（同路径 `.json` 后缀，方便程序化解析） |
+| `notify()` 与青龙 `notify.py` 模块名容易混淆 | 本地函数改名 `emit()`，青龙模块显式 `ql_notify_send` |
+
+### `jd_daily.py`（相对 faker4）
+
+| 问题 | 修复 |
+|---|---|
+| `requests.Session()` 创建后永不关闭（账号循环里泄漏） | 改为 `with requests.Session() as s:` 上下文管理器 |
+| `timeout=15` 不区分连接/读取 | 改为 `timeout=(5, 15)` |
+| `sign()` 定义后从未被调用 | 保留为扩展点，docstring 说明"当前所有接口无需签名" |
+| SQL f-string `FROM {tbl}` 理论上有注入风险 | 表格名是固定常量元组，注释说明安全原因 |
+| `notify()` 与青龙 `notify.py` 模块名容易混淆 | 本地函数改名 `emit()` |
+
+### `.gitignore`（新增条目）
+
+```
+__pycache__/
+*.pyc
+jd_auth_state.json
+jd_cookie.txt
+jd_activity_report.md
+jd_activity_report.json
+activity_report.md
+activity_report.json
+```
+
+## README 同步更新
+
+- 新增 `## Python 辅助工具` 章节，分别介绍三个脚本的用途、安装依赖、运行示例、相对 faker4 的优化点
+- 目录结构树新增三个 `.py` 文件
+
+## 验证
+
+```bash
+python -m py_compile jd_cookie_helper.py       # OK
+python -m py_compile jd_activity_scanner.py    # OK
+python -m py_compile jd_daily.py               # OK
+python jd_activity_scanner.py --list           # 输出 11 项活动清单
+python jd_daily.py                             # 无 JD_COOKIE 时输出友好提示
+python jd_cookie_helper.py --headless          # 缺 playwright 时提示安装命令；如果已有 playwright 但无缓存会立即失败并报错
+```
+
+---
+
 # 变更摘要（2026-11-23 第三轮：从 faker4 合并基础设施层）
-
-本轮从上游 [shufflewzc/faker4](https://github.com/shufflewzc/faker4) 挑选对现有 12 个脚本有用的基础设施改动合入，**没有新增任何任务脚本**（faker4 独有的农场/种豆等脚本保持原样不动）。
-
-## 合入内容
 
 ### 1. `jdCookie.js` —— 代理池模式（来自 faker4）
 

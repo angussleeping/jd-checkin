@@ -139,6 +139,74 @@ bash jd-checkin/jd_indeps.sh
 
 ---
 
+
+
+## Python 辅助工具
+
+仓库附带三个纯 Python 工具，**本地** 或 **面板** 都能跑，依赖极少（`requests` / `playwright`）。
+
+### `jd_cookie_helper.py` —— 扫码获取京东 Cookie（本地）
+
+在你自己的电脑上跑，自动打开京东扫码登录页，扫码后一键把 `JD_COOKIE` 格式的 Cookie 写到文件或剪贴板。首次扫码后会缓存浏览器登录态到 `~/.jd-cookie/state.json`（用户 home 目录，不会被 git 提交），下次启动优先恢复——只要京东登录态没过期就不用再扫码。
+
+```bash
+pip install playwright
+playwright install chromium          # 国内加速：PLAYWRIGHT_DOWNLOAD_HOST=https://npmmirror.com/mirrors/playwright/ playwright install chromium
+
+python3 jd_cookie_helper.py                    # 默认有头扫码，之后优先用缓存
+python3 jd_cookie_helper.py --headless         # 无界面（必须已有缓存，否则会立即失败）
+python3 jd_cookie_helper.py --force-scan      # 忽略缓存，强制重新扫码
+python3 jd_cookie_helper.py --output my.txt   # 指定输出文件
+```
+
+优化点（相对上游 faker4）：
+- 登录态缓存默认放 `~/.jd-cookie/state.json`，不进仓库目录
+- `--headless` + 无缓存 → 立即失败并提示，不会白等 3 分钟
+- Ctrl+C 干净退出浏览器，不留孤儿 chromium 进程
+- 终端输出 CK 自动脱敏（`pt_key=***`），完整值只在文件和剪贴板里
+- Playwright chromium 未安装 → 给出明确 install 命令 + 国内镜像加速选项
+- 登录态文件在非 Windows 上设置 `0o600` 权限
+
+### `jd_activity_scanner.py` —— 京东活动存活扫描器（本地）
+
+扫描京东公开接口/活动页，判断哪些活动还在线、哪些已下线，生成 Markdown（或 JSON）报告。不依赖面板，在你自己电脑上就能跑。
+
+```bash
+pip install requests
+
+python3 jd_activity_scanner.py                                  # 仅用公开接口/页面探测（不读 Cookie）
+python3 jd_activity_scanner.py --cookie "pt_key=...;pt_pin=..." # 带 Cookie 能看到真实登录态的活动状态
+JD_COOKIE="pt_key=...;pt_pin=...;" python3 jd_activity_scanner.py  # 或用环境变量
+python3 jd_activity_scanner.py --list                           # 仅打印内置活动清单
+python3 jd_activity_scanner.py --json                           # 额外输出 JSON 报告
+```
+
+优化点：
+- 每个活动探测 25s 硬超时（`fut.result(timeout=...)`），不会被单个活动拖死
+- 活动排序用稳定 `(name, category)` tuple 而非 CPython `id()` 内存地址
+- `requests.Session` 用上下文管理器，避免连接泄漏
+- 连接超时和读取超时分开（`timeout=(5, 15)`），对慢连接和挂起服务器更友好
+- 新增 `--json` 输出，方便后续程序化解析
+
+### `jd_daily.py` —— 每日签到 + 赚京豆（面板 / 本地）
+
+纯 HTTP 接口，不依赖 h5st 签名，在面板里跑就是个定时任务，本地跑也能工作。
+
+```bash
+# 面板里跑：配置 JD_COOKIE 环境变量后新建定时任务
+# cron: 0 9 * * *     （每天上午 9 点，会随机延迟防风控）
+python3 /ql/data/scripts/jd_daily.py
+
+# 本地跑
+JD_COOKIE="pt_key=...;pt_pin=...;" python3 jd_daily.py
+```
+
+优化点：
+- `requests.Session` 上下文管理器，每个账号独立创建/释放
+- 超时拆分为连接 (5s) 和读取 (15s)
+- SQL 表名是固定常量，不存在注入风险，已加注释说明
+- `sign()` 函数保留为扩展点（当前所有接口都不需要签名）
+
 ## 目录结构
 
 ```text
