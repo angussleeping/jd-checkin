@@ -1,3 +1,30 @@
+# 变更摘要（2026-11-23 第三轮：从 faker4 合并基础设施层）
+
+本轮从上游 [shufflewzc/faker4](https://github.com/shufflewzc/faker4) 挑选对现有 12 个脚本有用的基础设施改动合入，**没有新增任何任务脚本**（faker4 独有的农场/种豆等脚本保持原样不动）。
+
+## 合入内容
+
+### 1. `jdCookie.js` —— 代理池模式（来自 faker4）
+
+新增 `DP_POOL` / `PERMIT_JS` 两个环境变量。设置后可让指定脚本的所有 HTTP 请求走代理池，规避京东的 IP 封禁：
+
+```
+DP_POOL=socks5://user:pass@proxy.host:1080     # 代理池地址（需先 pnpm i -g global-agent）
+PERMIT_JS=jd_zjindan&jd_signbeanact&jd_bean_change   # 允许走代理的脚本，& 分隔；不设则所有脚本都不走
+```
+
+未设置 `DP_POOL` 时静默跳过，对现有脚本无任何影响。
+
+### 2. `jdCookie.js` —— 互助码注入（来自 faker4）
+
+新增 `ShareCodeConfigChineseName` / `ShareCodeConfigName` / `ShareCodeEnvName` 三个环境变量，由面板的 `task_before.sh` 在脚本启动前注入，用于把互助码日志（`$QL_DIR/data/log/.ShareCode/xxx.log`）里的 `${变量}` 占位符自动解析并拼成目标环境变量。这是青龙呆呆面板 ptask 并行任务配合农场/种豆互助时的基础设施，一般用户无需手动配置。
+
+### 3. 保留了前一轮的 CK 日志打码 / GITHUB_ACTIONS 保护 / `dotenv` 删除
+
+完整 diff 见 `jdCookie.js`。
+
+---
+
 # 变更摘要（2026-11-23 第二轮审计优化）
 
 本轮只改动基础设施层（Cookie 加载 / 青龙 API / 通知 / 依赖脚本），未触碰任务脚本的混淆逻辑。
