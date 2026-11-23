@@ -78,6 +78,7 @@ declare -A target_deps=(
     ["big-integer"]="1.6.52"
     ["got"]="11.8.6"
     ["dotenv"]="16.4.5"
+    ["global-agent"]="3.0.0"
 )
 
 # 获取已安装的全局依赖（用 JSON 输出解析，避免 --parseable 把路径当包名的旧问题）

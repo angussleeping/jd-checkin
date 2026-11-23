@@ -161,11 +161,12 @@ bash jd-checkin/jd_indeps.sh
 | 变量 | 说明 |
 |------|------|
 | `AUTOCFG=true` | 运行 `jd_indeps.sh` 时自动把 `sendNotify.js` 复制到 `deps` 目录 |
-| `DP_POOL` | 代理池地址，需先安装 `global-agent`；配合 `PERMIT_JS` 只对指定脚本生效 |
-| `PERMIT_JS` | 允许走代理池的脚本文件名，`&` 分隔 |
+| `DP_POOL` | 代理池地址（如 `socks5://user:pass@proxy.host:1080`），`jd_indeps.sh` 会自动安装 `global-agent@3.0.0` |
+| `PERMIT_JS` | 允许走代理池的脚本文件名关键字，`&` 分隔（如 `jd_zjindan&jd_bean_change`）；不设则所有脚本都不走代理 |
 | `JD_USER_AGENT` | 覆盖默认 UA |
 | `JD_DEBUG=false` | 关闭 `jdCookie.js` 的调试输出 |
-| `ShareCodeConfigName` / `ShareCodeEnvName` | 配合 `task_before.sh` 注入互助码，一般无需手动设置 |
+| `ShareCodeConfigChineseName` / `ShareCodeConfigName` / `ShareCodeEnvName` | 由面板 `task_before.sh` 注入，从 `$QL_DIR/data/log/.ShareCode/xxx.log` 解析互助码 |
+| `PTASK_LEFT` / `PTASK_RIGHT` | ptask 并行触发时控制互助码注入范围 |
 
 ---
 
@@ -189,10 +190,16 @@ CK 必须同时包含 `pt_key=` 和 `pt_pin=`，并以分号结尾，例如 `pt_
 **6. 为什么不能在 GitHub Actions 里跑？**
 `jdCookie.js` 检测到 `GITHUB_ACTIONS=true` 会主动退出并推送提醒。滥用公共 CI 资源会导致仓库和账号被封。
 
-**7. 更新后自定义的通知配置丢了？**
+**7. CK 频繁失效 / 提示网络错误？**
+京东风控会按 IP 封 CK。如果是家宽 IP 或多账号同 IP，可在面板里加 `DP_POOL` + `PERMIT_JS`（可选进阶变量），让高频脚本走代理池。配置方法：
+- `DP_POOL=socks5://user:pass@proxy.host:1080`（你的代理池）
+- `PERMIT_JS=jd_bean_change&jd_zjindan&jd_signbeanact&jd_ttgd`（只让高频脚本走代理）
+- 手动跑一次 `jd_indeps.sh` 自动装 `global-agent@3.0.0`
+
+**8. 更新后自定义的通知配置丢了？**
 `ql repo` 会覆盖 `scripts` 下的文件。把自定义 `sendNotify.js` 放到 `deps` 目录，并设置 `AUTOCFG=true` 重新执行依赖脚本。
 
-**8. 任务脚本能改吗？**
+**9. 任务脚本能改吗？**
 任务脚本是上游混淆代码，改动容易导致签名/加密逻辑失效。本仓库只维护基础设施层；任务失效时优先等待上游更新或更换脚本。
 
 ---
